@@ -15,11 +15,14 @@ function getConnection(){
 function selectData(e) {
   try {
     Logger.log('Try Read Data');
+    // select current activated sheet
     var sheet = SpreadsheetApp.getActiveSheet();
     var table_name = sheet.getRange('B2').getValue();
+    // make connection
     var conn = getConnection();
     var stmt = conn.createStatement();
     var query_string = 'select * from ' + table_name
+    // for check if there is right data
     Logger.log('Selected Table: ' + sheet.getRange('B2').getValue());
     Logger.log('Executed Query: ' + query_string);
     var results = stmt.executeQuery(query_string);
@@ -27,7 +30,7 @@ function selectData(e) {
     var numCols = metaInfo.getColumnCount();
     var lastRow = sheet.getLastRow();
     var lastCol = sheet.getLastColumn();
-    var active_row = 3;
+    var active_row = 3;  // recorders start with row 3
     
     // Clear Range
     sheet.getRange(active_row, 1, lastRow ,lastCol).clear();
@@ -39,10 +42,11 @@ function selectData(e) {
       sheet.getRange(active_row, col + 1).setBackground("#b5d2ff")      
     }
     active_row += 1
+    
+    // Fetch recorders
     while (results.next()) {
       for (var col = 0; col < numCols; col++) {
         var rowString = results.getString(col + 1);
-        // rowString += results.getString(col + 1) + '\t';
         sheet.getRange(active_row, col + 1).setValue(rowString)
       }
       active_row += 1;
@@ -60,6 +64,7 @@ function selectData(e) {
   }
 }
 
+// Message box
 function makeSureMsgBox(msg) {
   var makeSure = Browser.msgBox(msg, Browser.Buttons.OK_CANCEL);
   if (makeSure == 'cancel') {
