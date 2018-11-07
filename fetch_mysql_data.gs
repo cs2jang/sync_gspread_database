@@ -117,10 +117,11 @@ function updateData(e) {
 
     for (var i = active_row; i < lastRow; i++) {
       var data_array = []
-      var firstCellValue = sheet.getRange(i + 1, 1).getValue();
-      if (firstCellValue == '') {
-        continue;
-      }
+      // Check pk
+      // var firstCellValue = sheet.getRange(i + 1, 1).getValue();
+      // if (firstCellValue == '') {
+      //  continue;
+      // }
       for (var j = 0; j < lastCol; j++) {
         var cell_data = sheet.getRange(i + 1, j + 1).getValue();
         data_array.push("\"" + cell_data + "\"");
