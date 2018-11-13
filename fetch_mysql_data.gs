@@ -1,3 +1,14 @@
+var PINK_COLOR = '#ff6f6f';
+var WHITE_COLOR = '#ffffff';
+var executing_flag = false;
+
+function onEdit(e) {
+  if (executing_flag == false) {
+    var eRange = e.range;
+    eRange.setBackground(PINK_COLOR);
+  }  
+}
+
 function getConnection(){
   // <input your infomation>
   var address = '<db host address>';
@@ -15,6 +26,7 @@ function getConnection(){
 function selectData(e) {
   try {
     Logger.log('Try Read Data');
+    executing_flag = true;
     // select current activated sheet
     var sheet = SpreadsheetApp.getActiveSheet();
     var table_name = sheet.getRange('B2').getValue();
@@ -56,9 +68,11 @@ function selectData(e) {
     stmt.close();
     
     Browser.msgBox('Completed!');
+    executing_flag = false;
     
   } catch(e) {
     Browser.msgBox('Select Error: ' + e);
+    executing_flag = false;
     Logger.log('Select Error Occured!');
     Logger.log(e);    
   }
@@ -104,33 +118,43 @@ function updateData(e) {
     } 
     check_result.close();
 
-    // Delete All Data
-    var delete_query_string = 'DELETE FROM ' + table_name;
-    Logger.log('Deleted String: ' + delete_query_string); 
-    var delete_result = stmt.executeUpdate(delete_query_string);
-    Logger.log('Deleted rows: ' + delete_result);
-
-    // Insert All Data
-    var lastRow = sheet.getLastRow();
-    var lastCol = sheet.getLastColumn();
-    var active_row = 3;
-
+    var changed_array = []
+    for (var i = 0; i < lastRow; i++) {
+      for (var j = 0; j < lastCol; j++) {
+        var bgColor = sheet.getRange(i + 1, j + 1).getBackground();
+        if (bgColor == PINK_COLOR) {
+          var indexValue = sheet.getRange(i + 1, 1).getValue();
+          changed_array.push(indexValue);
+          break;
+        }
+      }
+    }
+    
+    changed_array.forEach(function(value) {
+      var delete_query_string = 'DELETE FROM ' + table_name + ' WHERE `index` = ' + value;
+      Logger.log('Deleted String: ' + delete_query_string); 
+      var delete_result = stmt.executeUpdate(delete_query_string);
+      Logger.log('Deleted rows: ' + delete_result);
+    });
+    
     for (var i = active_row; i < lastRow; i++) {
       var data_array = []
-      // Check empty row
-      var rowValue = sheet.getRange(i + 1, 1, i + 1, lastCol).getValues();
-      if (rowValue == '') {
+      var indexValue = sheet.getRange(i + 1, 1).getValue();
+      if (indexValue == '') {
         continue;
       }
-      for (var j = 0; j < lastCol; j++) {
-        var cell_data = sheet.getRange(i + 1, j + 1).getValue();
-        data_array.push("\"" + cell_data + "\"");
+      Logger.log(typeof indexValue);
+      if (changed_array.indexOf(indexValue) > -1) {
+        for (var j = 0; j < lastCol; j++) {
+          var cell_data = sheet.getRange(i + 1, j + 1).getValue();
+          data_array.push("\"" + cell_data + "\"");
+        }
+        var values = data_array.join(',');
+        var insert_query_string = 'INSERT INTO ' + table_name + ' VALUES ' + '(' + values + ')';
+        Logger.log('Inserted String: ' + insert_query_string);  
+        var insert_result = stmt.executeUpdate(insert_query_string);
+        Logger.log('Inserted : ' + insert_result);  
       }
-      var values = data_array.join(',');
-      var insert_query_string = 'INSERT INTO ' + table_name + ' VALUES ' + '(' + values + ')';
-      Logger.log('Inserted String: ' + insert_query_string);  
-      var insert_result = stmt.executeUpdate(insert_query_string);
-      Logger.log('Inserted : ' + insert_result);  
     }
 
     stmt.close();
